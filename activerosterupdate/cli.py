@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor
 import shutil
 import sys
@@ -92,7 +93,36 @@ def _p(msg: str = "") -> None:
 # ---------------------------------------------------------------- commands
 
 
+def steam_launch_option(cfg: dict):
+    """(value, ok) for the Steam launch option, or (None, True) if none is set.
+
+    ok is False when it points at something that is no longer there - which happens after
+    an upgrade if the old value named a script that has since been removed.
+    """
+    appid = str(cfg.get("steam_appid") or "5026790")
+    for cfgfile in _steam_configs():
+        try:
+            text = cfgfile.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        start = text.find('"' + appid + '"', text.find('"apps"'))
+        if start < 0:
+            continue
+        hit = re.search(r'"LaunchOptions"\s+"(.*)"', text[start:start + 2000])
+        if not hit or not hit.group(1).strip():
+            continue
+        # VDF escapes backslashes and quotes; undo that to get the real command
+        value = hit.group(1).replace(chr(92) + chr(92), chr(92)).replace(chr(92) + '"', '"')
+        target = re.match(r'"([^"]+)"', value)
+        if target and not Path(target.group(1)).exists():
+            return value, False
+        return value, True
+    return None, True
+
+
 def cmd_status(args, cfg) -> int:
+    from . import __version__
+    _p(f"Version      : v{__version__}")
     game = detect.find_game(cfg)
     _p(f"Axis install : {game or 'NOT FOUND (set axis_dir in config.json)'}")
     if game:
@@ -108,6 +138,15 @@ def cmd_status(args, cfg) -> int:
     _p(f"ESPN feeds   : {len(teams)} teams, {len(inj)} players on the injury report")
     links = detect.load_links()
     _p(f"Team linkage : {len(links)} clubs mapped to folders (mapping/teams.json)")
+    value, ok = steam_launch_option(cfg)
+    if value and ok:
+        _p("Steam Play    : syncs first")
+    elif value:
+        _p("Steam Play    : BROKEN - points at something that no longer exists:")
+        _p(f"               {value}")
+        _p("               Close Steam and run: ActiveRosterUpdate.exe steam-launch --all")
+    else:
+        _p("Steam Play    : not set (run steam-launch to sync when you press Play)")
     return 0
 
 
@@ -822,14 +861,41 @@ def cmd_steam_launch(args, cfg) -> int:
         done += 1
 
     if not done:
+        _p("")
+        _p("Nothing was changed. If it says the game is not listed, start Axis Football")
+        _p("from Steam once so Steam creates its entry, then run this again.")
         return 1
+
+    # read it back - a write that did not land is worse than one that failed loudly
+    verified = 0
+    for cfgfile in configs:
+        text = cfgfile.read_text(encoding="utf-8", errors="replace")
+        block_start = text.find('"' + appid + '"', text.find('"apps"'))
+        if block_start < 0:
+            continue
+        window = text[block_start:block_start + 2000]
+        if args.remove:
+            if '"LaunchOptions"' not in window or '"LaunchOptions"\t\t""' in window:
+                verified += 1
+        elif "LaunchOptions" in window and "play" in window:
+            verified += 1
+
     _p("")
+    if not verified:
+        _p("The change did not stick. That usually means Steam was still running and")
+        _p("rewrote its config. Close Steam completely - check the system tray - and")
+        _p("run this again.")
+        return 1
+
     if args.remove:
         _p("Launch option removed. Steam will start the game normally again.")
     else:
-        _p("Done. Start Steam and press Play - it will sync your rosters first,")
+        _p("Verified. Start Steam and press Play - it will sync your rosters first,")
         _p("then launch the game.")
-        _p(f"Launch option set to: {value}")
+        _p("")
+        _p(f"   {value}")
+        _p("")
+        _p("You can see it in Steam: right-click Axis Football, Properties, Launch Options.")
     _p(f"Backup: {ROOT / 'backups' / ('steam-' + stamp)}")
     return 0
 
@@ -1337,6 +1403,50 @@ def cmd_clean(args, cfg) -> int:
     return 0
 
 
+def cmd_update(args, cfg) -> int:
+    """Check for a newer build and install it over this one."""
+    from . import __version__, updates
+
+    _p(f"Installed: v{__version__}")
+    _p("Checking for a newer build ...")
+    release = updates.latest_release(cfg)
+    if not release:
+        _p("Could not reach GitHub. Try again later.")
+        return 1
+
+    if not updates.is_newer(release["tag"]):
+        _p(f"You are on the latest build ({release['tag']}).")
+        return 0
+
+    _p("")
+    _p(f"{release['tag']} is available.")
+    first = [ln for ln in release["notes"].splitlines() if ln.strip()][:4]
+    for line in first:
+        _p("   " + line.strip("#> ").strip())
+    _p("")
+
+    if args.check:
+        _p("Run 'update' without --check to install it.")
+        return 0
+
+    def progress(got, total):
+        if total and got % (5 * 1024 * 1024) < 262144:
+            _p(f"   {got // 1048576} MB of {total // 1048576} MB")
+
+    _p("Downloading ...")
+    try:
+        archive = updates.download(release, on_progress=progress)
+        staged = updates.stage(archive)
+    except Exception as exc:
+        _p(f"Download failed: {exc}")
+        return 1
+
+    _p("Installing - the app will restart itself.")
+    _p("Your settings, team matches and manual overrides are left alone.")
+    updates.apply_and_restart(staged)
+    return 0
+
+
 def cmd_restore(args, cfg) -> int:
     if not BACKUPS.exists() or not any(BACKUPS.iterdir()):
         _p("No backups saved.")
@@ -1459,6 +1569,11 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("clean", help="remove team folders left behind before a mod was installed")
     s.add_argument("--yes", action="store_true", help="actually delete them")
     s.set_defaults(fn=cmd_clean, team=None, all=False, force=False, reuse_low_ids=False,
+                   remove=False, refetch=False, all_teams=False, stamp=None, from_zip=None)
+
+    s = sub.add_parser("update", help="check for a newer build and install it")
+    s.add_argument("--check", action="store_true", help="only say whether one exists")
+    s.set_defaults(fn=cmd_update, team=None, all=False, force=False, reuse_low_ids=False,
                    remove=False, refetch=False, all_teams=False, stamp=None, from_zip=None)
 
     s = sub.add_parser("report", help="show what the last sync did")

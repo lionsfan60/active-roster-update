@@ -49,10 +49,13 @@ class Runner:
         self.busy = False
         self.partial = ""
         self.seen = 0
+        self.done_message = ""
 
-    def start(self, label: str, fn, *args, total: int = 0) -> bool:
+    def start(self, label: str, fn, *args, total: int = 0,
+              done_message: str = "") -> bool:
         if self.busy:
             return False
+        self.done_message = done_message
         self.busy = True
         self.seen = 0
         self.partial = ""
@@ -315,7 +318,17 @@ class App:
 
         self.status = tk.Label(self.root, text="", bg=INK, fg=MUTED, font=self.small,
                                justify="left", anchor="w")
-        self.status.pack(fill="x", pady=(4, 10), **pad)
+        self.status.pack(fill="x", pady=(4, 6), **pad)
+
+        # hidden until a newer build is found
+        self.update_bar = tk.Frame(self.root, bg="#123449", highlightbackground=ACCENT,
+                                   highlightthickness=1)
+        self.update_text = tk.Label(self.update_bar, text="", bg="#123449", fg=TEXT,
+                                    font=self.base, anchor="w")
+        self.update_text.pack(side="left", padx=12, pady=8)
+        self._button(self.update_bar, "Update now", self._do_update, primary=True).pack(
+            side="right", padx=10, pady=6, ipady=2)
+        self._pending_update = None
 
         # ---------------------------------------------------------- every week
         weekly = self._card("EVERY WEEK")
@@ -381,6 +394,8 @@ class App:
         self.runner.pump(self.root)
         self.refresh()
         self.runner.write("Ready. Sync all 32 teams is the one you want most weeks.\n")
+        if self.cfg.get("check_for_updates", True):
+            threading.Thread(target=self._check_update, daemon=True).start()
 
     def _card(self, title: str) -> tk.Frame:
         wrap = tk.Frame(self.root, bg=PANEL, highlightbackground=LINE, highlightthickness=1)
@@ -436,6 +451,47 @@ class App:
         self.status.configure(text=text, fg=colour)
         self.btn_mine.configure(text=f"Sync {club} only")
 
+    def _check_update(self) -> None:
+        """Ask GitHub whether there is a newer build; show a banner if so."""
+        from . import updates
+        release = updates.check(self.cfg)
+        if release:
+            self.root.after(0, lambda: self._offer_update(release))
+
+    def _offer_update(self, release: dict) -> None:
+        from . import __version__
+        self._pending_update = release
+        self.update_text.configure(
+            text=f"{release['tag']} is available - you are on v{__version__}")
+        self.update_bar.pack(fill="x", padx=18, pady=(0, 10), after=self.status)
+
+    def _do_update(self) -> None:
+        release = self._pending_update
+        if not release:
+            return
+        if not messagebox.askokcancel(
+                "Update",
+                f"Download and install {release['tag']}?\n\n"
+                "The app will close and reopen itself. Your settings, team matches and "
+                "manual overrides are left alone."):
+            return
+
+        from . import updates
+
+        def work(args, cfg):
+            print(f"Downloading {release['tag']} ...")
+
+            def progress(got, total):
+                if total and got % (5 * 1024 * 1024) < 262144:
+                    print(f"   {got // 1048576} MB of {total // 1048576} MB")
+
+            archive = updates.download(release, on_progress=progress)
+            staged = updates.stage(archive)
+            print("Installing - the app will restart itself.")
+            updates.apply_and_restart(staged)
+
+        self._run(f"Updating to {release['tag']}", work, self._args(), self.cfg)
+
     def _progress(self, label: str, done: int, total: int | None) -> None:
         """total is set when a job starts; after that only the club name changes."""
         if total is not None:
@@ -461,7 +517,9 @@ class App:
         self.progress.configure(mode="determinate", value=self.total or 0,
                                 maximum=self.total or 100)
         self.progress_label.configure(text="Finished")
-        self.runner.write("\nDone.\n")
+        # say what it means, not just that it stopped
+        message = getattr(self.runner, "done_message", "") or "Finished. You can close this window."
+        self.runner.write("\n" + message + "\n")
 
     def _args(self, **kw):
         from types import SimpleNamespace
@@ -473,19 +531,26 @@ class App:
         base.update(kw)
         return SimpleNamespace(**base)
 
-    def _run(self, label, fn, *args, total: int = 0) -> None:
-        if not self.runner.start(label, fn, *args, total=total):
+    def _run(self, label, fn, *args, total: int = 0, done_message: str = "") -> None:
+        if not self.runner.start(label, fn, *args, total=total,
+                                 done_message=done_message):
             messagebox.showinfo("Busy", "Something is already running - let it finish first.")
 
     # ------------------------------------------------------------------ actions
     def _sync_all(self) -> None:
         from .cli import cmd_sync
-        self._run("Syncing all 32 teams", cmd_sync, self._args(all=True), self.cfg, total=32)
+        self._run("Syncing all 32 teams", cmd_sync, self._args(all=True), self.cfg, total=32,
+                  done_message="Rosters are up to date. Start Axis Football and play.\n\n"
+                  "Remember: a game already in progress keeps the rosters it was created "
+                  "with, so start a NEW game to see these.")
 
     def _sync_mine(self) -> None:
         from .cli import cmd_sync
         self._run("Syncing my team and its next opponent",
-                  cmd_sync, self._args(gameday=""), self.cfg, total=2)
+                  cmd_sync, self._args(gameday=""), self.cfg, total=2,
+                  done_message="Rosters are up to date. Start Axis Football and play.\n\n"
+                  "Remember: a game already in progress keeps the rosters it was created "
+                  "with, so start a NEW game to see these.")
 
     def _setup(self) -> None:
         dialog = SetupDialog(self)
@@ -502,13 +567,16 @@ class App:
             self.cfg["favorite_team"] = choices["team"]
             _save_config({"favorite_team": choices["team"]})
 
-        if choices["steam"] and _steam_running():
-            messagebox.showwarning(
-                "Steam is open",
-                "Steam rewrites its settings when it closes, so the launch option would be "
-                "thrown away.\n\nClose Steam and use \"Sync when I press Play\" afterwards. "
-                "Everything else will still run.")
-            choices["steam"] = False
+        while choices["steam"] and _steam_running():
+            again = messagebox.askretrycancel(
+                "Close Steam first",
+                "Steam is running, and it rewrites its settings when it closes - so the "
+                "launch option would be thrown away.\n\n"
+                "Close Steam completely (check the system tray), then press Retry.\n\n"
+                "Cancel skips just this step; everything else still runs.")
+            if not again:
+                choices["steam"] = False
+                self.skipped_steam = True
 
         def work(args, cfg):
             if choices["mod"]:
@@ -533,8 +601,15 @@ class App:
                 else:
                     cmd_sync(self._args(gameday=""), cfg)
             print("\nSetup finished.")
+            if getattr(self, "skipped_steam", False):
+                print("")
+                print("NOT done: the Steam launch option was skipped because Steam was open.")
+                print("Close Steam, then click \"Sync when I press Play\" on the main window.")
 
-        self._run("Setting up", work, self._args(), self.cfg, total=32)
+        self._run("Setting up", work, self._args(), self.cfg, total=32,
+                  done_message="Setup is complete. You can close this window and play.\n\n"
+                               "Start a NEW game - a saved one keeps the rosters, stadium "
+                               "and field it was created with.")
 
     def _repair(self) -> None:
         from .cli import cmd_fields, cmd_fix_mod
@@ -544,7 +619,9 @@ class App:
             print("")
             cmd_fields(args, cfg)
 
-        self._run("Repairing the mod for Axis 2027", both, self._args(), self.cfg)
+        self._run("Repairing the mod for Axis 2027", both, self._args(), self.cfg,
+                  done_message="Mod repaired. Restart Axis Football, and start a NEW game - "
+                               "a saved one keeps the field it was made with.")
 
     def _photos(self) -> None:
         from .cli import cmd_index_portraits, cmd_portraits
@@ -553,17 +630,25 @@ class App:
             cmd_portraits(args, cfg)
             cmd_index_portraits(args, cfg)
 
-        self._run("Fetching player photos", both, self._args(all=True), self.cfg, total=32)
+        self._run("Fetching player photos", both, self._args(all=True), self.cfg, total=32,
+                  done_message="Photos are in. Restart Axis Football to see them.")
 
     def _steam(self) -> None:
-        from .cli import cmd_steam_launch
+        from .cli import _steam_running, cmd_steam_launch
+        while _steam_running():
+            if not messagebox.askretrycancel(
+                    "Close Steam first",
+                    "Steam is running, and it rewrites its settings when it closes.\n\n"
+                    "Close Steam completely (check the system tray), then press Retry."):
+                return
         everything = messagebox.askyesno(
             "Sync when I press Play",
             "Sync all 32 teams when you press Play?\n\n"
             "Yes  -  all 32, about 15 seconds\n"
             "No   -  just your team and its next opponent")
         self._run("Setting the Steam launch option", cmd_steam_launch,
-                  self._args(all_teams=everything), self.cfg)
+                  self._args(all_teams=everything), self.cfg,
+                  done_message="Start Steam and press Play - it syncs first, then launches.")
 
     def _roster(self) -> None:
         from .cli import cmd_roster
@@ -579,7 +664,8 @@ class App:
                                    "Put the previous rosters back from the last backup?"):
             return
         from .cli import cmd_restore
-        self._run("Restoring the previous rosters", cmd_restore, self._args(), self.cfg)
+        self._run("Restoring the previous rosters", cmd_restore, self._args(), self.cfg,
+                  done_message="Previous rosters are back. Restart the game to see them.")
 
     def _change_team(self) -> None:
         from tkinter import simpledialog
