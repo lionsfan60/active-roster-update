@@ -1,0 +1,26 @@
+**ActiveRosterUpdate — play the game before the game**
+
+Run it, and your Axis rosters match the real NFL for the upcoming week: current signings and cuts, positions off the real depth chart, injured players pulled so the actual backup starts, this week's ratings, and every player's real headshot as his portrait. Play your team's matchup on Sunday morning, then watch the real one and see how you did.
+
+Works inside JayBeeLove90's NFL mod — it updates his roster files, it doesn't replace his mod.
+
+On Axis 2027 it also repairs the mod: without the fix, the 2026 pack freezes at kickoff for everyone. One click, backed up, safe to re-run.
+
+Whole league syncs in about 15 seconds.
+
+**Download:** <https://github.com/lionsfan60/active-roster-update/releases/latest>
+**Full docs:** <https://github.com/lionsfan60/active-roster-update#readme>
+
+**Setup — once**
+`1)` Install JayBeeLove90's NFL mod into `Axis Football 2027\Mods\Team Mods`
+`2)` In the game: **Settings → Data → Use Mods = ON**, then restart it
+`3)` Unzip ActiveRosterUpdate anywhere, open `config.json`, set `favorite_team` to your club (e.g. `DET`)
+`4)` Run **1 - Setup.bat** — finds your install, pairs the 32 clubs to the mod folders
+`5)` Run **2 - Fix Mod For 2027.bat** — repairs the mod so 2027 stops freezing, adds stadiums and endzones
+`6)` Run **3 - Get Player Photos.bat** — real headshots for all 1,700 players (optional, takes a few minutes)
+
+**Every week**
+`7)` Run **Sync My Team.bat** (your club + next opponent) or **Sync All 32 Teams.bat**
+`8)` Launch and play
+
+That's it. Or set **Sync and Play.bat** as your Steam launch option and pressing Play syncs first.

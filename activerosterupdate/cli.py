@@ -514,10 +514,20 @@ def cmd_fields(args, cfg) -> int:
         "PITTSBURGH", "SAN FRANCISCO", "SEATTLE", "TENNESSEE", "WASHINGTON", "ST LOUIS",
     }
 
+    WHITE = "RGB: 255, 255, 255, 255"
+
     def rgba(value: str, fallback: str) -> str:
-        parts = [p.strip() for p in (value or "").split(",") if p.strip().isdigit()]
+        """Normalise a colour to the game's format.
+
+        Values arrive two ways: the mod's bare "0, 120, 182" and the game's own
+        "RGB: 0, 120, 182, 255" (Team Suite rewrites files in that form). Strip the
+        prefix before splitting, or the first channel is read as text and dropped -
+        which silently turns 0,120,182 into 120,182,255.
+        """
+        text = re.sub(r"(?i)^\s*RGB\s*:", "", value or "").strip()
+        parts = [p.strip() for p in text.split(",") if p.strip().isdigit()]
         if len(parts) < 3:
-            parts = fallback.split(",")
+            parts = [p.strip() for p in fallback.split(",")]
         return "RGB: " + ", ".join(parts[:3]) + ", 255"
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -546,14 +556,27 @@ def cmd_fields(args, cfg) -> int:
             block.append(("HomeStadium", city))
         else:
             no_stadium += 1
-        # Only the keys that actually look right in game. The field mask keys
-        # (FieldMaskColor*/FieldColorMaskIndex/LineMaskIndex) paint a stripe across the
-        # field, and the upright keys recolour the goalposts - both were rolled back after
-        # seeing them, so they are deliberately not written here.
+        # Two lessons from seeing this in game:
+        #
+        #   A colour key that is absent is not "left alone" - the game paints the missing
+        #   colour magenta (252, 0, 255). LogoBorderColor, NumbersOutlineColor and
+        #   OtherLinesColor must all be written or sidelines turn magenta.
+        #
+        #   FieldColorMaskIndex left unset draws a coloured mask across the field - the
+        #   stripe - tinted with the team colour. Setting it to 0 asks for no mask, which
+        #   is why it is written explicitly rather than skipped.
+        #
+        # The FieldMaskColor* and Upright* keys stay out: they tint that mask and recolour
+        # the goalposts, and both looked wrong.
         block += [
+            ("FieldColorMaskIndex", "0"),
+            ("LineMaskIndex", "0"),
             ("GrassColorIndex", "0"),
             ("MowedEffect", "0"),
             ("PressNormalIndex", "10"),
+            ("LogoBorderColor", primary),
+            ("NumbersOutlineColor", WHITE),
+            ("OtherLinesColor", WHITE),
             ("EndzoneColor0", primary),
             ("EndzoneColor1", secondary),
             ("EndzoneColor2", alternate),
