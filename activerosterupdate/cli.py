@@ -546,7 +546,8 @@ def cmd_fields(args, cfg) -> int:
         # this tool wrote fewer keys, and a team left in that state keeps the magenta
         # sidelines and the field stripe - so "already has an endzone colour" is not
         # good enough to skip on.
-        needed = {"FieldColorMaskIndex", "LineMaskIndex", "LogoBorderColor",
+        needed = {"FieldMaskColor0", "FieldColorMaskIndex", "LineMaskIndex",
+                  "UprightColor", "UprightPaddingColor", "LogoBorderColor",
                   "NumbersOutlineColor", "OtherLinesColor", "EndzoneColor0"}
         if needed.issubset(values) and not args.force:
             skipped += 1
@@ -575,8 +576,21 @@ def cmd_fields(args, cfg) -> int:
         # The FieldMaskColor* and Upright* keys stay out: they tint that mask and recolour
         # the goalposts, and both looked wrong.
         block += [
+            # These colour the painted area around the field - the sidelines. Without them
+            # the game has no colour to use and paints them magenta. The stripe that came
+            # with them earlier was not the colours, it was FieldColorMaskIndex choosing a
+            # patterned mask to paint them with; 0 asks for the plain one.
+            ("FieldMaskColor0", primary),
+            ("FieldMaskColor1", secondary),
+            ("FieldMaskColor2", alternate),
             ("FieldColorMaskIndex", "0"),
             ("LineMaskIndex", "0"),
+            # Goalposts. Absent, these render magenta like any missing colour; set to the
+            # team colour they looked wrong. HUE:0 is the game's own default (yellow posts)
+            # and white padding is what a real set has.
+            ("UprightColor", "HUE:0"),
+            ("UprightPaddingColor", WHITE),
+            ("UprightIndex", "1"),
             ("GrassColorIndex", "0"),
             ("MowedEffect", "0"),
             ("PressNormalIndex", "10"),
