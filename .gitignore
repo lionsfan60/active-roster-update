@@ -1,0 +1,11 @@
+data/cache/
+out/
+backups/
+__pycache__/
+*.pyc
+data/
+build/
+config.json
+mapping/teams.json
+DISCORD_POST.md
+STEAM_POST.md

@@ -1,0 +1,36 @@
+{
+  "favorite_team": "DET",
+  "axis_dir": null,
+  "steam_appid": "5026790",
+  "game_folder_names": [
+    "Axis Football 2027",
+    "Axis Football 2026",
+    "Axis Football 2024"
+  ],
+  "season": null,
+  "ratings_iteration": "latest",
+  "roster_size": 53,
+  "exclude_statuses": [
+    "Out",
+    "Injured Reserve",
+    "Physically Unable to Perform",
+    "Non-Football Injury",
+    "Suspension",
+    "Doubtful",
+    "Practice Squad Injured"
+  ],
+  "questionable_penalty": 0.95,
+  "include_practice_squad": false,
+  "ability_scale": {
+    "xFactor": 1.0,
+    "superstarAbility": 0.5
+  },
+  "unrated_target_overall": {
+    "starter": 70,
+    "backup": 62,
+    "depth": 55
+  },
+  "derive_potential": true,
+  "preserve_cosmetics": true,
+  "backup": true
+}

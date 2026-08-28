@@ -1,0 +1,232 @@
+{
+  "_comment": "Axis 2027 uses specific position slots (LT/LG/C/RG/RT, LDE-RDE as DE, LCB/RCB/NCB, FS/SS), not position groups. Two ways in: an ESPN depth-chart slot, which is exact, or the player's listed NFL position, which gives a set of slots he could fill.",
+  "_espn_slot_to_axis": {
+    "qb": "QB",
+    "rb": "RB",
+    "fb": "FB",
+    "wr": "WR",
+    "te": "TE",
+    "lt": "LT",
+    "lg": "LG",
+    "c": "C",
+    "rg": "RG",
+    "rt": "RT",
+    "lde": "DE",
+    "rde": "DE",
+    "de": "DE",
+    "ldt": "DT",
+    "rdt": "DT",
+    "dt": "DT",
+    "nt": "DT",
+    "mlb": "ILB",
+    "ilb": "ILB",
+    "slb": "OLB",
+    "wlb": "OLB",
+    "olb": "OLB",
+    "lb": "LB",
+    "lcb": "LCB",
+    "rcb": "RCB",
+    "nb": "NCB",
+    "ncb": "NCB",
+    "cb": "CB",
+    "fs": "FS",
+    "ss": "SS",
+    "s": "S",
+    "pk": "K",
+    "k": "K",
+    "p": "P",
+    "ls": "",
+    "h": "",
+    "kr": "",
+    "pr": "",
+    "_comment": "Special-teams slots (ls, h, kr, pr) map to nothing on purpose - being the long snapper or the returner says where a player lines up on four snaps a game, not what position he plays."
+  },
+  "_nfl_position_to_axis": {
+    "_comment": "Ordered by preference - the first slot is where he goes if nothing else decides it.",
+    "QB": [
+      "QB"
+    ],
+    "RB": [
+      "RB",
+      "FB"
+    ],
+    "HB": [
+      "RB",
+      "FB"
+    ],
+    "FB": [
+      "FB",
+      "RB"
+    ],
+    "WR": [
+      "WR"
+    ],
+    "TE": [
+      "TE",
+      "FB"
+    ],
+    "T": [
+      "LT",
+      "RT"
+    ],
+    "OT": [
+      "LT",
+      "RT"
+    ],
+    "LT": [
+      "LT"
+    ],
+    "RT": [
+      "RT"
+    ],
+    "G": [
+      "LG",
+      "RG"
+    ],
+    "OG": [
+      "LG",
+      "RG"
+    ],
+    "LG": [
+      "LG"
+    ],
+    "RG": [
+      "RG"
+    ],
+    "C": [
+      "C",
+      "LG",
+      "RG"
+    ],
+    "OL": [
+      "C",
+      "LG",
+      "RG",
+      "LT",
+      "RT"
+    ],
+    "DE": [
+      "DE",
+      "DT"
+    ],
+    "EDGE": [
+      "DE",
+      "OLB"
+    ],
+    "DT": [
+      "DT",
+      "DE"
+    ],
+    "NT": [
+      "DT"
+    ],
+    "DL": [
+      "DE",
+      "DT"
+    ],
+    "LB": [
+      "ILB",
+      "LB",
+      "OLB"
+    ],
+    "ILB": [
+      "ILB",
+      "LB"
+    ],
+    "MLB": [
+      "ILB",
+      "LB"
+    ],
+    "OLB": [
+      "OLB",
+      "LB",
+      "DE"
+    ],
+    "CB": [
+      "LCB",
+      "RCB",
+      "NCB",
+      "DCB",
+      "CB"
+    ],
+    "S": [
+      "FS",
+      "SS",
+      "S"
+    ],
+    "SAF": [
+      "FS",
+      "SS",
+      "S"
+    ],
+    "FS": [
+      "FS",
+      "S",
+      "SS"
+    ],
+    "SS": [
+      "SS",
+      "S",
+      "FS"
+    ],
+    "DB": [
+      "DCB",
+      "NCB",
+      "LCB",
+      "RCB",
+      "FS",
+      "SS"
+    ],
+    "K": [
+      "K"
+    ],
+    "PK": [
+      "K"
+    ],
+    "P": [
+      "P"
+    ],
+    "LS": [
+      "C"
+    ]
+  },
+  "_family": {
+    "_comment": "Last-resort grouping: if a slot has no natural candidate left, anyone from the same family can fill it rather than leaving the row empty.",
+    "QB": "QB",
+    "RB": "BACK",
+    "FB": "BACK",
+    "WR": "RECEIVER",
+    "TE": "RECEIVER",
+    "LT": "OLINE",
+    "LG": "OLINE",
+    "C": "OLINE",
+    "RG": "OLINE",
+    "RT": "OLINE",
+    "DE": "DLINE",
+    "DT": "DLINE",
+    "ILB": "BACKER",
+    "OLB": "BACKER",
+    "LB": "BACKER",
+    "LCB": "SECONDARY",
+    "RCB": "SECONDARY",
+    "NCB": "SECONDARY",
+    "DCB": "SECONDARY",
+    "CB": "SECONDARY",
+    "FS": "SECONDARY",
+    "SS": "SECONDARY",
+    "S": "SECONDARY",
+    "K": "SPECIALIST",
+    "P": "SPECIALIST"
+  },
+  "_layout_normalize_comment": "Axis 2027 logs 'Found unknown position' for these codes, which the 2026-era mod still uses. Rows carrying them are rewritten to the specific slot the game understands, alternating so a team keeps a sensible spread rather than four of the same.",
+  "_layout_normalize": {
+    "LB": [
+      "ILB",
+      "OLB"
+    ],
+    "S": [
+      "SS",
+      "FS"
+    ]
+  }
+}

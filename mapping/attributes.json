@@ -1,0 +1,46 @@
+{
+  "_comment": "Axis ROSTER.CSV column <- weighted blend of EA/Madden attribute keys. Weights are normalized; the result is rounded and clamped 1-99. Column names are matched case- and space-insensitively, and columns the installed game does not have are simply ignored - so this file covers both the 2027 schema (PAS BLK / RUN BLK / M COV / Z COV / RTRN / PAS RSH / BLK SHD) and the older 2023 one (BLKING / COVER / BLK BRK / ENDUR).",
+
+  "AWARE": {"awareness": 1.0},
+  "SPEED": {"speed": 0.7, "acceleration": 0.3},
+  "TLK BRK": {"breakTackle": 0.55, "stiffArm": 0.2, "trucking": 0.15, "carrying": 0.1},
+  "FUMBLE": {"carrying": 1.0},
+  "CATCH": {"catching": 0.45, "catchInTraffic": 0.2, "spectacularCatch": 0.2, "shortRouteRunning": 0.15},
+  "RTRN": {"kickReturn": 0.6, "agility": 0.2, "speed": 0.2},
+
+  "PAS BLK": {"passBlock": 0.5, "passBlockPower": 0.25, "passBlockFinesse": 0.25},
+  "RUN BLK": {"runBlock": 0.4, "runBlockPower": 0.2, "runBlockFinesse": 0.2, "impactBlocking": 0.1, "leadBlock": 0.1},
+
+  "THR PWR": {"throwPower": 1.0},
+  "THR ACC": {"throwAccuracyShort": 0.3, "throwAccuracyMid": 0.3, "throwAccuracyDeep": 0.2, "throwOnTheRun": 0.1, "throwUnderPressure": 0.1},
+  "KCK PWR": {"kickPower": 1.0},
+  "KCK ACC": {"kickAccuracy": 1.0},
+
+  "BLK SHD": {"blockShedding": 1.0},
+  "PAS RSH": {"powerMoves": 0.4, "finesseMoves": 0.4, "blockShedding": 0.2},
+  "TACKLE": {"tackle": 0.75, "pursuit": 0.25},
+  "HIT PWR": {"hitPower": 1.0},
+  "M COV": {"manCoverage": 0.8, "press": 0.2},
+  "Z COV": {"zoneCoverage": 0.8, "playRecognition": 0.2},
+
+  "FITNESS": {"stamina": 1.0},
+  "DISCIPLINE": {"awareness": 0.5, "playRecognition": 0.5},
+
+  "BLKING": {"runBlock": 0.3, "passBlock": 0.3, "impactBlocking": 0.2, "leadBlock": 0.2},
+  "COVER": {"manCoverage": 0.45, "zoneCoverage": 0.45, "press": 0.1},
+  "BLK BRK": {"blockShedding": 0.6, "powerMoves": 0.2, "finesseMoves": 0.2},
+  "AGIL": {"agility": 0.6, "changeOfDirection": 0.25, "jukeMove": 0.15},
+  "ENDUR": {"injury": 0.6, "toughness": 0.4},
+
+  "_position_overrides_comment": "Per-Axis-position replacements for the blends above. A defender's awareness should include play recognition; a quarterback's should not.",
+  "_position_overrides": {
+    "QB": {"AGIL": {"agility": 0.5, "changeOfDirection": 0.3, "speed": 0.2}},
+    "RB": {"AWARE": {"awareness": 0.8, "bCVision": 0.2}},
+    "WR": {"AWARE": {"awareness": 0.7, "release": 0.3}},
+    "TE": {"AWARE": {"awareness": 0.7, "release": 0.3}},
+    "OL": {"AWARE": {"awareness": 0.7, "passBlock": 0.3}, "BLK BRK": {"blockShedding": 0.5, "strength": 0.5}},
+    "DL": {"AWARE": {"awareness": 0.7, "playRecognition": 0.3}},
+    "LB": {"AWARE": {"awareness": 0.7, "playRecognition": 0.3}},
+    "DB": {"AWARE": {"awareness": 0.7, "playRecognition": 0.3}}
+  }
+}

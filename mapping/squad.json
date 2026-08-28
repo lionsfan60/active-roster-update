@@ -1,0 +1,4 @@
+{
+  "_comment": "How many players of each Axis position to carry, in write order. Must total <= roster_size.",
+  "QB": 3, "RB": 4, "WR": 6, "TE": 3, "OL": 9, "DL": 8, "LB": 7, "DB": 10, "K": 1, "P": 1
+}

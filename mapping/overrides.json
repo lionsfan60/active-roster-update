@@ -1,0 +1,13 @@
+{
+  "_comment": "Manual gameday overrides, applied after the injury feed. 'out' forces a player off the roster (use it for the official inactives list, released 90 minutes before kickoff); 'in' forces one back on even if ESPN lists him as hurt. Match on full name, case-insensitive.",
+  "_example": {
+    "KC": {
+      "out": [
+        "Rashee Rice"
+      ],
+      "in": [
+        "Isiah Pacheco"
+      ]
+    }
+  }
+}
