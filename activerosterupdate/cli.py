@@ -542,7 +542,13 @@ def cmd_fields(args, cfg) -> int:
         values = dict(
             re.findall(r"^([A-Za-z0-9_]+)=(.*)$", text, re.M)
         )
-        if "EndzoneColor0" in values and not args.force:
+        # Rewrite whenever the block is incomplete, not merely absent. An older version of
+        # this tool wrote fewer keys, and a team left in that state keeps the magenta
+        # sidelines and the field stripe - so "already has an endzone colour" is not
+        # good enough to skip on.
+        needed = {"FieldColorMaskIndex", "LineMaskIndex", "LogoBorderColor",
+                  "NumbersOutlineColor", "OtherLinesColor", "EndzoneColor0"}
+        if needed.issubset(values) and not args.force:
             skipped += 1
             continue
 
