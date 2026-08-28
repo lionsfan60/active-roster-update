@@ -30,7 +30,11 @@ directly and puts them in the game you're actually playing.
 
 ## Install
 
-Python 3.10+ and nothing else — the whole thing is standard library.
+Download the release, unzip it, double-click `ActiveRosterUpdate.exe`. That opens a window with
+everything in it — sync buttons, first-time setup, player photos, the Steam launch option.
+
+From source: Python 3.10+ and nothing but the standard library, except Pillow for the portrait
+cropping (`pip install pillow`).
 
 ```
 cd path\to\ActiveRosterUpdate
@@ -40,6 +44,12 @@ python -m activerosterupdate status
 ## Commands
 
 ```
+python -m activerosterupdate                        # the window (also what a double-click does)
+python -m activerosterupdate menu                   # the text menu, if you prefer it
+python -m activerosterupdate setup                  # guided first-run setup, asks before optional steps
+python -m activerosterupdate install-mod --from X.zip   # install a team mod you have downloaded
+python -m activerosterupdate clean                  # remove folders left behind before a mod existed
+python -m activerosterupdate play --all             # sync then launch (what the Steam option runs)
 python -m activerosterupdate status                 # install found? feeds alive? teams linked?
 python -m activerosterupdate weeks                  # list EA's weekly ratings drops
 python -m activerosterupdate link                   # match the 32 clubs to Axis team-mod folders
@@ -53,8 +63,20 @@ python -m activerosterupdate fix-mod                # repair a 2026-era mod for 
 python -m activerosterupdate fields                 # team fields, endzones, city stadiums
 python -m activerosterupdate portraits --all        # real headshots for every player
 python -m activerosterupdate index-portraits        # record who owns which portrait slot
+python -m activerosterupdate steam-launch           # press Play in Steam, sync happens first
 python -m activerosterupdate restore                # undo: put the backed-up ROSTER.CSVs back
 ```
+
+A team mod has to be installed before any of this does anything: the tool rewrites the rosters
+inside someone's team mod, it is not one itself. It checks first and says so rather than writing
+rosters into folders the game cannot load — the game ships its own `Sample Mod - Classic
+Pittsburgh`, so "is there a folder in Team Mods" is not a safe test; folder names are matched
+against the 32 NFL nicknames instead.
+
+`setup` is the one to point people at. It runs the required steps in order and asks before the
+optional ones (photos, the Steam launch option, a first sync). It is safe to re-run: team folder
+matches you fixed by hand are left alone, players who already have a photo are skipped, and an
+incomplete field block is rewritten rather than duplicated.
 
 `sync` writes to `./out` unless you pass `--apply`. Every `--apply` run copies the file it is
 about to overwrite into `backups/<timestamp>/`.
@@ -152,6 +174,13 @@ wants, and writes them into `Mods/Player Portraits/Skin Tone N/{Large,Small}/<id
 roster row at its own slot. `index-portraits` then records ESPN id → slot in `data/portraits.json`,
 so later syncs keep players on their own face and fetch one for anyone new. Slots are unique
 league-wide; a player with no published headshot keeps the generated face he had.
+
+## Saved games keep what they were made with
+
+**Saved games keep what they were made with.** When a game is created, Axis snapshots the
+teams — rosters, uniforms, field, endzones, stadium, all of it. Resuming replays that snapshot, so
+changes on disk do not appear in a game already under way. Start a new game to see them, and for
+franchise, sync before you create it.
 
 ## Caveats
 

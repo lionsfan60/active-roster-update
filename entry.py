@@ -1,15 +1,14 @@
-"""PyInstaller entry point - one-file exe wrapper around the CLI."""
+"""PyInstaller entry point - one-file exe wrapper around the CLI.
+
+With no arguments (a double-click from Explorer) the CLI shows its menu, so this
+does not need to invent a default action of its own.
+"""
 import sys
 
 from activerosterupdate.cli import main
 
 if __name__ == "__main__":
-    argv = sys.argv[1:]
-    if not argv:
-        # double-clicked from Explorer: do the obvious thing, then hold the window open
-        argv = ["sync", "--apply"]
-        print("AxisLiveRosters - syncing every club into the game.\n")
-        code = main(argv)
-        input("\nDone. Press Enter to close.")
-        sys.exit(code)
-    sys.exit(main(argv))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        sys.exit(130)
